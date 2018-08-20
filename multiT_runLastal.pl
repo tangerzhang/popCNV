@@ -43,28 +43,12 @@ while(<IN>){
 	}
 close IN;
 
-my $num_of_job = keys %infordb;
-my $i=1;
-while($i<=$num_of_job){
-	while(scalar(threads->list())<=$maxThreads){
-		my $scaf_n = $infordb{$i}->{'rname'};
-		  next if(!defined($scaf_n));
-		threads->new(\&run_lastal,$scaf_n);
-		$i++;
-		}
-  foreach $thread(threads->list(threads::all)){
-     if($thread->is_joinable()){
-       $thread->join();
-     }
-   }	
-	}
-
-foreach $thread(threads->list(threads::all)){
-    $thread->join();
-   }
+system("rm command.txt");
+system("ls faByChr/*fasta |xargs -I\{\} basename \{\} .fasta|xargs -I\{\} echo \"lastal -P 1 dblast faByChr/{}.fasta -a 180 -b 1 -q 80 -r 30|maf-convert blasttab  >tmp/\{\}.out\" >>command.txt");
+system("ParaFly -c command.txt -CPU $maxThreads");
 
 open(OUT, "> $outaln") or die"";
-open(IN, "cat tmp/*.out |") or die"";
+open(IN, "cat tmp/*.out |awk '\$3>88' |") or die"";
 my $content = <IN>;
 @linedb = split(/\n/,$content);
 foreach my $line (@linedb){
@@ -79,8 +63,8 @@ close IN;
 close OUT;
 system("rm -rf tmp/");
 
-sub run_lastal{
-  my $scaf = shift;
-  my $cmd  = "lastal -P 2 dblast faByChr/".$scaf.".fasta -a 180 -b 1 -q 80 -r 30 |maf-convert blasttab |awk '\$3>$identity' > tmp/".$scaf.".out";
-  system($cmd);	
-	}
+#sub run_lastal{
+#  my $scaf = shift;
+#  my $cmd  = "lastal -P 2 dblast faByChr/".$scaf.".fasta -a 180 -b 1 -q 80 -r 30 |maf-convert blasttab |awk '\$3>$identity' > tmp/".$scaf.".out";
+#  system($cmd);	
+#	}
